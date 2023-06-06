@@ -1,0 +1,37 @@
+variables:
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+  modulePrefix: 'bicep/'
+
+jobs:
+- job: modules
+  displayName: 'Publish Bicep Modules'
+  # condition: eq(variables.isMain, 'true')
+  pool:
+    vmImage: ubuntu-latest
+  steps:
+  - task: AzureCLI@2
+    displayName: 'Publish/Update Modules to Registry'
+    inputs:
+      azureSubscription: $(ServiceConnectionName)
+      scriptType: 'pscore'
+      scriptLocation: inlineScript
+      inlineScript: |
+        az bicep install
+        $version = Get-Date -f 'yyyy-MM-dd'
+        $publishedModules = $(az acr repository list --name $(registryName) --query "[?contains(@, '$(modulePrefix)')]" -o tsv)
+        Get-ChildItem -Recurse -Path ./*.bicep | Foreach-Object {
+          $filename = ($_ | Resolve-Path -Relative) -replace "^./" -replace '\..*'
+          $filename = $filename.ToLower()
+          # Check if module already exists in the registry
+          If (-not ($publishedModules ?? @()).Contains(("$(modulePrefix)" + $filename))) {
+            Write-Host "Adding new module $filename with version $version"
+            az bicep publish --file $_ --target br:$(registryName).azurecr.io/bicep/${filename}:${version}
+          }
+        }
+       
+        git diff-tree --no-commit-id --name-only --diff-filter=ad -r $(Build.SourceVersion) | Where-Object {$_.EndsWith('.bicep')} | Foreach-Object {
+          $moduleName = ($_ | Resolve-Path -Relative) -replace "^./" -replace '\..*'
+          $moduleName = $moduleName.ToLower()
+          Write-Host "Updating module $moduleName with version $version"
+          az bicep publish --file $_ --target br:$(registryName).azurecr.io/$(modulePrefix)${moduleName}:${version}
+        }  
