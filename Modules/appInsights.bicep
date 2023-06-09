@@ -9,8 +9,8 @@ param projectName string
 ])
 
 param environmentType string
-@description('WorkspaceResourceId.')
-param WorkspaceResourceId string
+// @description('WorkspaceResourceId.')
+// param WorkspaceResourceId string
 @description('The Azure region into which the resources should be deployed.')
 param location string = resourceGroup().location
 @description('Tags.')
@@ -27,7 +27,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02-preview' = {
     Application_Type: 'web'
     publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
-    WorkspaceResourceId: WorkspaceResourceId
+    // WorkspaceResourceId: WorkspaceResourceId
   }
   tags: tags
 }

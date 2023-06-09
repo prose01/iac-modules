@@ -41,9 +41,9 @@ param tags object
 
 var functionAppServiceAppName = 'FA-${projectName}-${environmentType}'
 
-var operationsSubscriptionID = (environmentType == 'PROD') ? 'f90f8a3d-20be-47ae-9441-12b4f6c208d4' : 'd4b1b72a-4757-46bf-b21a-bc06d047bf81'
-var resourceGroupName = (environmentType == 'PROD') ? 'rg-logs-prod' : 'rg-logs-dev'
-var logAnalyticsWorkspace = (environmentType == 'PROD') ? 'LAW-LRUD-PROD' : 'LAW-LRUD-DEV'
+// var operationsSubscriptionID = (environmentType == 'PROD') ? 'f90f8a3d-20be-47ae-9441-12b4f6c208d4' : 'd4b1b72a-4757-46bf-b21a-bc06d047bf81'
+// var resourceGroupName = (environmentType == 'PROD') ? 'rg-logs-prod' : 'rg-logs-dev'
+// var logAnalyticsWorkspace = (environmentType == 'PROD') ? 'LAW-LRUD-PROD' : 'LAW-LRUD-DEV'
 var retentionInDays = (environmentType == 'PROD') ? 7 : 1
 
 
@@ -80,7 +80,7 @@ module appInsights './appInsights.bicep' = {
   params: {
     projectName: projectName
     environmentType: environmentType
-    WorkspaceResourceId: logAnalytics.id
+    // WorkspaceResourceId: logAnalytics.id
     location: location
     tags: tags
   }
@@ -149,29 +149,29 @@ resource logconfig 'Microsoft.Web/sites/config@2022-03-01' = {
   }
 }
 
-resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' existing = {
-  name: logAnalyticsWorkspace
-  scope: resourceGroup(operationsSubscriptionID, resourceGroupName)
-}
+// resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' existing = {
+//   name: logAnalyticsWorkspace
+//   scope: resourceGroup(operationsSubscriptionID, resourceGroupName)
+// }
 
-resource setting 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: 'Diagnostic Logs'
-  scope: functionApp
-  properties: {
-    workspaceId: logAnalytics.id
-    logs: [
-      {
-        category: 'FunctionAppLogs'
-        enabled: true
-      }
-    ]
-    metrics: [
-      {
-        category: 'AllMetrics'
-        enabled: true
-      }
-    ]
-  }
-}
+// resource setting 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+//   name: 'Diagnostic Logs'
+//   scope: functionApp
+//   properties: {
+//     workspaceId: logAnalytics.id
+//     logs: [
+//       {
+//         category: 'FunctionAppLogs'
+//         enabled: true
+//       }
+//     ]
+//     metrics: [
+//       {
+//         category: 'AllMetrics'
+//         enabled: true
+//       }
+//     ]
+//   }
+// }
 
 output functionAppIdentityId string = functionApp.identity.principalId
