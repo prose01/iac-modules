@@ -93,6 +93,7 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
   properties: {
     serverFarmId: appServicePlanID
     siteConfig: {
+      alwaysOn: true
       ftpsState: 'FtpsOnly'
       netFrameworkVersion: contains(linuxFxVersion,'DOTNET') ? 'v6.0' : null
       linuxFxVersion: linuxFxVersion
