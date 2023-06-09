@@ -41,28 +41,38 @@ param tags object
 
 var functionAppServiceAppName = 'FA-${projectName}-${environmentType}'
 
-var storageAccountName = toLower('sto${projectName}${environmentType}')
-var storageAccountSkuName = (environmentType == 'PROD') ? 'Standard_GRS' : 'Standard_LRS'
-
 var operationsSubscriptionID = (environmentType == 'PROD') ? 'f90f8a3d-20be-47ae-9441-12b4f6c208d4' : 'd4b1b72a-4757-46bf-b21a-bc06d047bf81'
 var resourceGroupName = (environmentType == 'PROD') ? 'rg-logs-prod' : 'rg-logs-dev'
 var logAnalyticsWorkspace = (environmentType == 'PROD') ? 'LAW-LRUD-PROD' : 'LAW-LRUD-DEV'
 var retentionInDays = (environmentType == 'PROD') ? 7 : 1
 
 
-module storageAccount './storageAccount.bicep' = {
-  name: 'storageAccount'
-  params: {
-    storageAccountName: storageAccountName
-    storageAccountSkuName: storageAccountSkuName
-    location: location
-    tags: tags
-  }
-}
+// module storageAccount './storageAccount.bicep' = {
+//   name: 'storageAccount'
+//   params: {
+//     projectName: '${projectName}fa'
+//     environmentType: environmentType
+//     location: location
+//     tags: tags
+//   }
+// }
 
-// Get a reference to the existing storage
-resource storageAccountRef 'Microsoft.Storage/storageAccounts@2021-09-01' existing = {
-  name: storageAccountName
+var storageAccountName = toLower('sto${projectName}${substring(uniqueString(resourceGroup().id), 0, 1)}fa${environmentType}')
+var storageAccountSkuName = (environmentType == 'PROD') ? 'Standard_GRS' : 'Standard_LRS'
+
+// We need to make our own storage from functionApp as we need AccountKey secrets
+resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
+  name: toLower(storageAccountName)
+  location: location
+  sku: {
+    name: storageAccountSkuName
+  }
+  kind: 'StorageV2'
+  properties: {
+    accessTier: 'Hot'
+    supportsHttpsTrafficOnly: true
+  }
+  tags: tags
 }
 
 module appInsights './appInsights.bicep' = {
@@ -98,15 +108,14 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
   }
   dependsOn: [
     storageAccount
-    storageAccountRef
   ]
   tags: tags
 }
 
 var appSettingsBase = {
   APPINSIGHTS_INSTRUMENTATIONKEY: appInsights.outputs.instrumentationKey
-  AzureWebJobsStorage: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountRef.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccountRef.listKeys().keys[0].value}'
-  WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountRef.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccountRef.listKeys().keys[0].value}'
+  AzureWebJobsStorage: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+  WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
   WEBSITE_CONTENTSHARE: toLower(functionAppServiceAppName)
   FUNCTIONS_EXTENSION_VERSION: '~4'
   FUNCTIONS_WORKER_RUNTIME: runtime 
@@ -164,3 +173,5 @@ resource setting 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
     ]
   }
 }
+
+output functionAppIdentityId string = functionApp.identity.principalId

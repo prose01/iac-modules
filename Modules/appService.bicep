@@ -46,10 +46,6 @@ var resourceGroupName = (environmentType == 'PROD') ? 'rg-logs-prod' : 'rg-logs-
 var logAnalyticsWorkspace = (environmentType == 'PROD') ? 'LAW-LRUD-PROD' : 'LAW-LRUD-DEV'
 var retentionInDays = (environmentType == 'PROD') ? 7 : 1
 
-// https://dev.to/kenakamu/bicep-deploy-function-app-with-vnet-integration-2oil
-
-// virtualNetworkSubnetId: vnet.properties.subnets[0].id
-
 
 module appInsights './appInsights.bicep' = {
   name: 'appinsights-${appServiceAppName}'
