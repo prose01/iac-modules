@@ -13,7 +13,8 @@ param environmentType string
 param location string = resourceGroup().location
 
 @description('The SKU of App Service Plan.')
-param appServicePlanSkuName string
+param appServicePlanSkuName string = (environmentType == 'PROD') ? 'P1V3' : 'P0V3'
+
 @description('The number of App Service plan instances.')
 @minValue(1)
 @maxValue(10)
